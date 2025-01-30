@@ -1,0 +1,134 @@
+function sendDistrictEmails() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName("2025 Delegate Count by Legion District");
+  const data = sheet.getRange("A1:C11").getValues(); // Fetch data from A1:C11 range
+
+  // Email Templates
+  const emailTemplateA = `
+Greetings [district commander] and [SAL district commander],
+
+As of [date], we currently have [delegates] signed up to attend the 2025 Session of Boys State from your district. 
+
+As a reminder:
+- There is no maximum number of delegates a post or school can send.
+- The cost to attend is $375, with $325 coming from a sponsor or Post.
+- Who: Young men who are Juniors (preferred), or Sophomores in the 24-25 school year.
+- When: Sunday, June 1st through Saturday, June 7th, 2025.
+- Where: Kansas State University in Manhattan.
+- Why: To inculcate a sense of individual obligation to community, state, and nation.
+- How: Apply at www.ksbstate.org.
+- Bonus: College credit from K-State and Scouting Merit Badges can now be earned for Boys Staters!
+
+Our goal for this year is 250 delegates, that is 23 delegates per district! If your district has the most delegates, you will get our first-ever plaque with your district’s number on it for the next year!
+
+If you have any questions, please contact info@ksbstate.org.
+
+Thank you for the support of your Kansas Boys State program!
+
+Kyle Wheatley  
+Executive Director  
+The American Legion Boys State of Kansas
+`;
+
+  const emailTemplateB = `
+Greetings [department commander] and [detachment commander],
+
+Below you will find a breakdown of the number of delegates per District for the 2025 Session of Boys State (District 0 is for Out-of-State Delegates):
+
+[table]
+
+As a reminder:
+- There is no maximum number of delegates a post or school can send.
+- The cost to attend is $375, with $325 coming from a sponsor or Post.
+- Who: Young men who are Juniors (preferred), or Sophomores in the 24-25 school year.
+- When: Sunday, June 1st through Saturday, June 7th, 2025.
+- Where: Kansas State University in Manhattan.
+- Why: To inculcate a sense of individual obligation to community, state, and nation.
+- How: Apply at www.ksbstate.org.
+- Bonus: College credit from K-State and Scouting Merit Badges can now be earned for Boys Staters!
+
+Our goal for this year is 250 delegates, that is 23 delegates per district! This year, we are awarding a plaque to the district that has the most delegates, and we are exploring additional rewards for the district and post with the most delegates.
+
+If you have any questions, please contact info@ksbstate.org.
+
+Thank you for the support of your Kansas Boys State program!
+
+Kyle Wheatley  
+Executive Director  
+The American Legion Boys State of Kansas
+`;
+
+  // Email contacts
+  const districtContacts = {
+    0: ["Department Commander Evans <departmentcommander@kansaslegion.org>", ""],
+    1: ["District Commander George Pogge <districtcommander1@kansaslegion.org>", "SAL District Commander Jeff Kerns <blkcldkerns@yahoo.com>"],
+    2: ["District Commander Anthony Pantoja <districtcommander2@kansaslegion.org>", "SAL District Commander Rick Miller <salsquadron153olathe@outlook.com>"],
+    3: ["District Commander Melvin Eubanks <districtcommander3@kansaslegion.org>", "SAL District Commander Ronnie Rommel <ronnie.rommel72@gmail.com>"],
+    4: ["District Commander Danny Roush <districtcommander4@kansaslegion.org>", ""],
+    5: ["District Commander Joe Hulse <districtcommander5@kansaslegion.org>", "SAL District Commander Dan McDowell <djmcdowell84@gmail.com>"],
+    6: ["District Commander Jimmy Strachan <districtcommander6@kansaslegion.org>", "SAL District Commander Kelly Pflughoeft <kamep5@yahoo.com>"],
+    7: ["District Commander Bill Sykes <districtcommander7@kansaslegion.org>", "SAL District Commander Rick Munsch <rdmunsch@gmail.com>"],
+    8: ["District Commander Chris Self <districtcommander8@kansaslegion.org>", "SAL District Commander Michael Weber <spidercreek220@gmail.com>"],
+    9: ["District Commander Jennifer Carder <districtcommander9@kansaslegion.org>", "SAL District Commander Monte Lewis <montemegg57@gmail.com>"],
+    10: ["District Commander Larry Rokey <districtcommander10@kansaslegion.org>", "SAL District Commander Mark Wessel <mwessel.alr21@gmail.com>"],
+    11: ["District Commander Alan Zeitvogel <districtcommander11@kansaslegion.org>", "SAL District Commander Randy Porter <bightmeagain2@yahoo.com>"]
+  };
+
+  const departmentContacts = [
+    "Department Commander Evans <departmentcommander@kansaslegion.org>",
+    "Detachment Commander Gallentine <jim.gallentine@gmail.com>"
+  ];
+
+  const date = new Date().toLocaleDateString(); // Current date
+
+  // Send Email A to District Commanders
+  for (let i = 1; i < data.length; i++) { // Skip header row
+    const district = data[i][0];
+    const delegates = data[i][1] || 0; // Default to 0 if no delegates exist
+    const additionalInfo = data[i][2] || "N/A";
+
+    const [commander, salCommander] = districtContacts[district] || ["None", "None"];
+
+    let emailBodyA = emailTemplateA
+      .replace("[district commander]", commander)
+      .replace("[SAL district commander]", salCommander || "None")
+      .replace("[date]", date)
+      .replace("[delegates]", delegates);
+
+    const recipientEmails = [commander.split("<")[1]?.replace(">", ""), salCommander.split("<")[1]?.replace(">", "")]
+      .filter(Boolean)
+      .join(",");
+    if (recipientEmails) {
+      GmailApp.sendEmail(
+        recipientEmails,
+        `Delegate Count for District ${district}`,
+        emailBodyA
+      );
+      Logger.log(`Email A sent to District ${district}: ${recipientEmails}`);
+    } else {
+      Logger.log(`Skipped District ${district}: No valid email addresses`);
+    }
+  }
+
+  // Prepare and send Email B to Department Commanders
+  let tableContent = "District\tDelegates\tAdditional Info\n";
+  for (let i = 1; i < data.length; i++) { // Include all rows (including District 0)
+    const district = data[i][0];
+    const delegates = data[i][1];
+    const additionalInfo = data[i][2] || "N/A";
+    tableContent += `${district}\t${delegates}\t${additionalInfo}\n`;
+  }
+
+  let emailBodyB = emailTemplateB
+    .replace("[department commander]", departmentContacts[0])
+    .replace("[detachment commander]", departmentContacts[1])
+    .replace("[table]", tableContent);
+
+  const departmentEmails = departmentContacts.map(contact => contact.split("<")[1]?.replace(">", "")).join(",");
+  GmailApp.sendEmail(
+    departmentEmails,
+    "Complete Delegate Count Table",
+    emailBodyB
+  );
+  Logger.log(`Email B sent to Department Commanders: ${departmentEmails}`);
+}
