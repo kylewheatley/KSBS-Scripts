@@ -7,10 +7,13 @@ function sendEmails() {
   var totalEmails = 1980; // Total emails in the list (update if needed)
   var lastRow = Math.min(data.length, totalEmails + 1); // Prevent out-of-bounds errors
 
+  var fileId = "1WB2gvsqfb8gs7PI5zPY2Bviif-CILs5i"; // Replace with your actual file ID
+  var pdfFile = DriveApp.getFileById(fileId); // Get the PDF file from Google Drive
+
   var template = `
     <p><strong><firstname>,</strong></p>
     
-    <p>My name is Kyle Wheatley, and I am the Executive Director of the American Legion Boys State of Kansas. I would love to invite you to apply to attend <strong>Kansas Boys State</strong> this summer from <strong>June 1 - June 7</strong> on the campus of <strong>Kansas State University</strong>.</p>
+    <p>My name is <strong>Kyle Wheatley</strong>, and I am the Executive Director of the American Legion Boys State of Kansas. I would love to invite you to apply to attend <strong>Kansas Boys State</strong> this summer from <strong>June 1 - June 7</strong> on the campus of <strong>Kansas State University</strong>.</p>
 
     <p>Kansas Boys State is a fast-paced, fun leadership and teamwork experience that fosters self-identity, mutual respect, and civic responsibility. Through simulated elections, political parties, and government at various levels, you develop skills in leadership, public speaking, conflict resolution, and networking.</p>
 
@@ -30,7 +33,7 @@ function sendEmails() {
 
     <p>The cost to attend is just <strong>$375</strong>, which covers <strong>food, housing, and programming for the week</strong>. Typically, you pay <strong>$50</strong>, and the remaining <strong>$325</strong> is covered by an <strong>American Legion Post or a community organization</strong> (e.g., Lions Club, Kiwanis Club, Rotary Club, Optimist Club, or even a church). If you need sponsorship help, <strong>apply anyway</strong>—we can help you find a sponsor!</p>
 
-    <p>We would love to see you at Boys State this summer, where you'll join <strong>thousands of Kansans</strong> who have attended before you!</p>
+    <p>We would love to see you at Boys State this summer, where you'll join <strong>thousands of Kansans</strong> who have attended before you! A copy of our brochure is attached for you to see more about our program or visit our website to see a video about what a week at Boys State is like.</p>
 
     <p>🔗 <strong>Visit our website:</strong> <a href="https://ksbstate.org" target="_blank">https://ksbstate.org</a></p>
     <p>📸 <strong>Follow us on Instagram:</strong> <a href="https://www.instagram.com/kansasboysstate" target="_blank">@kansasboysstate</a></p>
@@ -54,7 +57,8 @@ function sendEmails() {
       MailApp.sendEmail({
         to: email,
         subject: subject,
-        htmlBody: message
+        htmlBody: message,
+        attachments: [pdfFile.getAs(MimeType.PDF)] // Attach PDF
       });
 
       sheet.getRange(i + 1, 16).setValue("Yes"); // Update column P
