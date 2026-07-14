@@ -1,0 +1,98 @@
+SELECT
+  -- Primary Key
+  app.application_id AS `App ID`,
+  
+  -- Specific fields from app_data
+  app.welcome_letter_sent AS `Welcome Letter Sent`,
+  app.status AS `App Status`,
+  app.early_bird AS `Early Bird`,
+  app.total_paid AS `Total Paid`,
+  app.sponsor_info AS `Sponsor Info`,
+  app.delegate_first_name AS `Delegate First Name`,
+  app.delegate_last_name AS `Delegate Last Name`,
+  app.delegate_mobile_phone_number AS `Delegate Phone Number`, 
+  app.delegate_email_address AS `Delegate Email`,
+  
+  -- Dynamically merge the three high school fields into one (ignoring empty strings)
+  COALESCE(
+    NULLIF(app.high_school_al, ''), 
+    NULLIF(app.high_school_mz, ''), 
+    NULLIF(app.high_school_not_listed, '')
+  ) AS `High School`,
+
+    -- CROSSWALK OUTPUT (Defaults to 0 if school is not found)
+  IFNULL(cw.legion_district, 0) AS `Legion District`,
+
+  app.tshirt_size AS `TShirt Size`,
+  app.conditioning_required AS `Conditioning Required`,
+  app.merit_badge_interest AS `Merit Badge Interest`,
+  app.parent_first_name AS `Parent First Name`,
+  app.parent_last_name AS `Parent Last Name`,
+  app.parent_email AS `Parent Email`,
+  app.parent_phone_number AS `Parent Phone Number`,
+  app.emergency_contact_first_name AS `Emergency Contact First Name`,
+  app.emergency_contact_last_name AS `Emergency Contact Last Name`,
+  app.emergency_contact_phone_number AS `Emergency Contact Phone Number`,
+  app.emergency_contact_relationship AS `Emergency Contact Relationship`,
+  app.accommodations_needed AS `Accomodations Needed`,
+  app.any_other_info AS `Any other info`,
+  app.payment_status AS `Fee Payment Status`,
+  
+  -- Specific fields from social_contract
+  sc.completed AS `Social Contract Completed`,
+  
+  -- Specific fields from precheckin_meal
+  pm.count_over_10 AS `Count of Diners over 10`,
+  pm.count_5_to_10 AS `Count of Diners 5 to 10`,
+  pm.payment_status AS `PreCheckin Payment Status`,
+  pm.payment_total AS `PreCheckin Payment Total`,
+    
+  -- Specific fields from medical_media_consent
+  mmc.allergy_info AS `Allergy Info`,
+  mmc.anaphylactic_allergies AS `Anaphylactic Allergies`,
+
+  -- CONSOLIDATED FOOD ALLERGIES LIST
+  -- (Checks if each field is YES, and joins them with commas)
+  ARRAY_TO_STRING([
+    IF(UPPER(mmc.soy) = 'YES', 'Soy', NULL),
+    IF(UPPER(mmc.eggs) = 'YES', 'Eggs', NULL),
+    IF(UPPER(mmc.lactose) = 'YES', 'Lactose', NULL),
+    IF(UPPER(mmc.sesame) = 'YES', 'Sesame', NULL),
+    IF(UPPER(mmc.treenuts) = 'YES', 'Treenuts', NULL),
+    IF(UPPER(mmc.gluten) = 'YES', 'Gluten', NULL),
+    IF(UPPER(mmc.fish) = 'YES', 'Fish', NULL),
+    IF(UPPER(mmc.peanuts) = 'YES', 'Peanuts', NULL),
+    IF(UPPER(mmc.shellfish) = 'YES', 'Shellfish', NULL)
+  ], ', ') AS food_allergies,
+
+  mmc.medications AS `Medications`,
+  mmc.med_storage AS `Medication Storage`,
+  mmc.physical_conditions AS `Physical Conditions`,
+  mmc.completed AS `Media-Medical Form Completed`,
+
+  -- Specific fields from delegate_parking
+  dp.state AS `Tag State`,
+  dp.number AS `Tag Number`,
+  dp.completed AS `Parking Completed`,
+
+FROM `session-master-data.wufoo_data.app_data` app
+
+LEFT JOIN `session-master-data.wufoo_data.social_contract` sc 
+  ON app.application_id = sc.application_id
+
+LEFT JOIN `session-master-data.wufoo_data.precheckin_meal` pm 
+  ON app.application_id = pm.application_id
+
+LEFT JOIN `session-master-data.wufoo_data.medical_media_consent` mmc 
+  ON app.application_id = mmc.application_id
+
+LEFT JOIN `session-master-data.wufoo_data.delegate_parking` dp 
+  ON app.application_id = dp.application_id
+
+-- Crosswalk lookup based on the calculated High School
+LEFT JOIN `session-master-data.legion_data.district_crosswalk` cw
+  ON COALESCE(
+    NULLIF(app.high_school_al, ''), 
+    NULLIF(app.high_school_mz, ''), 
+    NULLIF(app.high_school_not_listed, '')
+  ) = cw.wufoo_school_name
